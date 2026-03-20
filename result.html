@@ -4,24 +4,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
-<body style="font-family:sans-serif; padding:40px;">
+<body style="font-family:sans-serif; padding:40px; line-height:1.8;">
 
-<p onclick="play()" style="cursor:pointer;">
+<p id="play" style="cursor:pointer;">
 쌓인 것을 들어보세요
 </p>
 
+<p id="status" style="opacity:0.4; font-size:12px;"></p>
+
 <script>
 
-function play(){
+document.getElementById("play").onclick = function(){
 
   const breath = localStorage.getItem("breath");
   const ambient = localStorage.getItem("ambient");
   const personal = localStorage.getItem("personal");
 
   if (!breath || !ambient || !personal) {
-    alert("아직 기록이 부족합니다");
+    document.getElementById("status").innerText = "아직 모든 흔적이 모이지 않았습니다";
     return;
   }
+
+  document.getElementById("status").innerText = "재생 중... 화면을 녹화하세요";
 
   [breath, ambient, personal].forEach(function(src, i){
 
@@ -32,9 +36,12 @@ function play(){
     }, i * 800);
 
   });
-}
+};
 
 </script>
+
+</body>
+</html>
 
 </body>
 </html>
