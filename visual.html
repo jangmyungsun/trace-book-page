@@ -4,102 +4,71 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
-<body style="font-family:sans-serif; padding:40px; line-height:1.8;">
+<body style="font-family:sans-serif; padding:40px;">
 
 <p id="play" style="cursor:pointer;">
-쌓인 것을 들어보세요
+테스트 (이미지 생성)
 </p>
 
-<p id="guide" style="opacity:0.4; font-size:12px;"></p>
-
-<canvas id="canvas" width="300" height="300" style="margin-top:40px;"></canvas>
+<canvas id="canvas" width="300" height="300" style="margin-top:40px; border:1px solid #eee;"></canvas>
 
 <script>
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// 🔴 base64 → audio → waveform 추출
-async function drawWaveform(base64, offsetX) {
+// 🔴 단순 waveform (AudioContext 안 씀)
+function drawSimpleWave(base64, offsetY){
 
-  const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  const audio = new Audio(base64);
 
-  const response = await fetch(base64);
-  const arrayBuffer = await response.arrayBuffer();
-  const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+  // duration 기반으로 랜덤 생성 (fallback 방식)
+  audio.onloadedmetadata = function(){
 
-  const data = audioBuffer.getChannelData(0);
-
-  const step = Math.floor(data.length / 100);
-
-  ctx.beginPath();
-
-  for (let i = 0; i < 100; i++) {
-    const val = data[i * step] * 50;
-
-    const x = offsetX + i * 2;
-    const y = 150 + val;
-
-    if (i === 0) ctx.moveTo(x, y);
-    else ctx.lineTo(x, y);
-  }
-
-  ctx.strokeStyle = "#111";
-  ctx.lineWidth = 1;
-  ctx.stroke();
-}
-
-// 🔴 랜덤 패턴 (소리 기반)
-function drawParticles(seed) {
-
-  for (let i = 0; i < 40; i++) {
-
-    const x = Math.random() * 300;
-    const y = Math.random() * 300;
-    const size = Math.random() * 2;
+    const len = Math.floor(audio.duration * 50);
 
     ctx.beginPath();
-    ctx.arc(x, y, size, 0, Math.PI * 2);
-    ctx.fillStyle = "rgba(0,0,0,0.2)";
-    ctx.fill();
-  }
+
+    for(let i=0; i<len; i++){
+
+      const x = i * 3;
+      const y = offsetY + (Math.random() - 0.5) * 40;
+
+      if(i===0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+
+    ctx.strokeStyle = "#111";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  };
 }
 
 // 🔴 메인 실행
-document.getElementById("play").onclick = async function(){
+document.getElementById("play").onclick = function(){
 
   const breath = localStorage.getItem("breath");
   const ambient = localStorage.getItem("ambient");
   const personal = localStorage.getItem("personal");
 
   if (!breath || !ambient || !personal) {
-    document.getElementById("guide").innerText = "아직 모든 흔적이 모이지 않았습니다";
+    alert("데이터 없음");
     return;
   }
 
-  document.getElementById("guide").innerText = "지금을 남길 수 있습니다";
-
-  // canvas 초기화
+  // 초기화
   ctx.clearRect(0, 0, 300, 300);
 
-  // 🔴 소리 재생
-  [breath, ambient, personal].forEach((src, i) => {
-
+  // 소리 재생
+  [breath, ambient, personal].forEach((src, i)=>{
     const audio = new Audio(src);
-
-    setTimeout(()=>{
-      audio.play();
-    }, i * 800);
-
+    setTimeout(()=>audio.play(), i*800);
   });
 
-  // 🔴 이미지 생성
-  await drawWaveform(breath, 0);
-  await drawWaveform(ambient, 50);
-  await drawWaveform(personal, 100);
-
-  drawParticles();
-
+  // 이미지 생성
+  drawSimpleWave(breath, 80);
+  drawSimpleWave(ambient, 150);
+  drawSimpleWave(personal, 220);
 };
 
 </script>
