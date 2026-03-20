@@ -16,78 +16,76 @@
 
 <script>
 
-let audioCtx;
-
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// 🔴 핵심: 에너지 기반 시각화
-async function reactiveVisual(base64){
+function generateSeed(str){
+  let sum = 0;
+  for(let i=0;i<str.length;i++){
+    sum += str.charCodeAt(i);
+  }
+  return sum;
+}
 
-  const response = await fetch(base64);
-  const buffer = await response.arrayBuffer();
-  const audioBuffer = await audioCtx.decodeAudioData(buffer);
+function draw(seed, offsetY){
 
-  const source = audioCtx.createBufferSource();
-  source.buffer = audioBuffer;
+  let t = 0;
 
-  const analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 128;
-
-  source.connect(analyser);
-  analyser.connect(audioCtx.destination);
-
-  source.start();
-
-  const data = new Uint8Array(analyser.frequencyBinCount);
-
-  function draw(){
-
-    analyser.getByteFrequencyData(data);
-
-    // 🔴 에너지 계산
-    let sum = 0;
-    for(let i=0;i<data.length;i++){
-      sum += data[i];
-    }
-    const energy = sum / data.length;
-
-    // 🔴 화면 전체 리셋 대신 잔상 남김
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
-    ctx.fillRect(0,0,300,300);
-
-    // 🔴 원 형태 (숨 느낌)
-    const radius = energy * 0.5;
+  function loop(){
 
     ctx.beginPath();
-    ctx.arc(150,150,radius,0,Math.PI*2);
+
+    for(let i=0;i<150;i++){
+
+      const x = i * 2;
+
+      // 🔴 seed 기반 변형 (핵심)
+      const y = offsetY + Math.sin(i*0.1 + t + seed*0.01) * (10 + seed % 20);
+
+      if(i===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    }
+
     ctx.strokeStyle = "#111";
     ctx.stroke();
 
-    requestAnimationFrame(draw);
+    t += 0.05;
+
+    requestAnimationFrame(loop);
   }
 
-  draw();
+  loop();
 }
 
-// 🔴 실행
-document.getElementById("play").onclick = async function(){
-
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  await audioCtx.resume();
+document.getElementById("play").onclick = function(){
 
   const breath = localStorage.getItem("breath");
+  const ambient = localStorage.getItem("ambient");
+  const personal = localStorage.getItem("personal");
 
-  if (!breath){
-    document.getElementById("guide").innerText = "데이터 없음";
+  if (!breath || !ambient || !personal) {
+    document.getElementById("guide").innerText = "기록이 부족합니다";
     return;
   }
 
-  document.getElementById("guide").innerText = "소리에 따라 형태가 변합니다";
+  document.getElementById("guide").innerText = "각 소리는 다른 형태로 나타납니다";
 
   ctx.clearRect(0,0,300,300);
 
-  reactiveVisual(breath);
+  // 🔴 seed 생성
+  const s1 = generateSeed(breath);
+  const s2 = generateSeed(ambient);
+  const s3 = generateSeed(personal);
+
+  // 🔴 소리 재생 (안정)
+  new Audio(breath).play();
+  setTimeout(()=>new Audio(ambient).play(), 800);
+  setTimeout(()=>new Audio(personal).play(), 1600);
+
+  // 🔴 시각화
+  draw(s1, 80);
+  setTimeout(()=>draw(s2,150),800);
+  setTimeout(()=>draw(s3,220),1600);
 };
 
 </script>
