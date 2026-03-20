@@ -25,23 +25,33 @@ document.getElementById("play").onclick = function(){
     return;
   }
 
-  document.getElementById("status").innerText = "재생 중... 화면을 녹화하세요";
+  document.getElementById("status").innerText = "재생 중...";
 
-  [breath, ambient, personal].forEach(function(src, i){
+  const sounds = [breath, ambient, personal];
+
+  sounds.forEach((src, i) => {
 
     const audio = new Audio(src);
 
-    setTimeout(function(){
+    audio.volume = 0;
+
+    setTimeout(() => {
       audio.play();
-    }, i * 800);
+
+      // 페이드 인
+      let vol = 0;
+      const fade = setInterval(() => {
+        vol += 0.05;
+        audio.volume = vol;
+        if (vol >= 0.6) clearInterval(fade);
+      }, 200);
+
+    }, i * 1200);
 
   });
 };
 
 </script>
-
-</body>
-</html>
 
 </body>
 </html>
