@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="font-family:sans-serif; padding:40px;">
+
+<p onclick="play()" style="cursor:pointer;">
+쌓인 것을 들어보세요
+</p>
+
+<script>
+
+function play(){
+
+  const breath = localStorage.getItem("breath");
+  const ambient = localStorage.getItem("ambient");
+  const personal = localStorage.getItem("personal");
+
+  if (!breath || !ambient || !personal) {
+    alert("아직 기록이 부족합니다");
+    return;
+  }
+
+  [breath, ambient, personal].forEach((src, i) => {
+
+    const audio = new Audio(src);
+
+    setTimeout(()=>{
+      audio.play();
+    }, i * 800);
+  });
+}
+
+</script>
+
+</body>
+</html>
