@@ -10,82 +10,105 @@
 소리를 들어보세요
 </p>
 
-<p id="guide" style="opacity:0.4; font-size:12px;"></p>
-
 <canvas id="canvas" width="300" height="300" style="margin-top:40px;"></canvas>
 
 <script>
 
+let audioCtx;
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-function generateSeed(str){
-  let sum = 0;
-  for(let i=0;i<str.length;i++){
-    sum += str.charCodeAt(i);
-  }
-  return sum;
-}
+// 🔴 핵심: blob 형태
+async function reactiveBlob(base64){
 
-function draw(seed, offsetY){
+  const response = await fetch(base64);
+  const buffer = await response.arrayBuffer();
 
-  let t = 0;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  await audioCtx.resume();
 
-  function loop(){
+  const audioBuffer = await audioCtx.decodeAudioData(buffer);
+
+  const source = audioCtx.createBufferSource();
+  source.buffer = audioBuffer;
+
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 128;
+
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+
+  source.start();
+
+  const data = new Uint8Array(analyser.frequencyBinCount);
+
+  function draw(){
+
+    analyser.getByteFrequencyData(data);
+
+    // 🔴 피치 계산 (고주파 비율)
+    let high = 0;
+    for(let i=64;i<data.length;i++){
+      high += data[i];
+    }
+    high /= 64;
+
+    // 🔴 에너지 계산
+    let sum = 0;
+    for(let i=0;i<data.length;i++){
+      sum += data[i];
+    }
+    const energy = sum / data.length;
+
+    // 🔴 잔상
+    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.fillRect(0,0,300,300);
+
+    const centerX = 150;
+    const centerY = 150;
+
+    const baseRadius = energy * 0.6;
 
     ctx.beginPath();
 
-    for(let i=0;i<150;i++){
+    for(let i=0;i<Math.PI*2;i+=0.1){
 
-      const x = i * 2;
+      // 🔴 피치 영향 → 형태 울퉁불퉁
+      const distortion = Math.sin(i*10 + high*0.1) * (high * 0.2);
 
-      // 🔴 seed 기반 변형 (핵심)
-      const y = offsetY + Math.sin(i*0.1 + t + seed*0.01) * (10 + seed % 20);
+      const r = baseRadius + distortion;
+
+      const x = centerX + Math.cos(i) * r;
+      const y = centerY + Math.sin(i) * r;
 
       if(i===0) ctx.moveTo(x,y);
       else ctx.lineTo(x,y);
     }
 
+    ctx.closePath();
+
     ctx.strokeStyle = "#111";
     ctx.stroke();
 
-    t += 0.05;
-
-    requestAnimationFrame(loop);
+    requestAnimationFrame(draw);
   }
 
-  loop();
+  draw();
 }
 
+// 🔴 실행
 document.getElementById("play").onclick = function(){
 
   const breath = localStorage.getItem("breath");
-  const ambient = localStorage.getItem("ambient");
-  const personal = localStorage.getItem("personal");
 
-  if (!breath || !ambient || !personal) {
-    document.getElementById("guide").innerText = "기록이 부족합니다";
+  if (!breath) {
+    alert("데이터 없음");
     return;
   }
 
-  document.getElementById("guide").innerText = "각 소리는 다른 형태로 나타납니다";
-
   ctx.clearRect(0,0,300,300);
 
-  // 🔴 seed 생성
-  const s1 = generateSeed(breath);
-  const s2 = generateSeed(ambient);
-  const s3 = generateSeed(personal);
-
-  // 🔴 소리 재생 (안정)
-  new Audio(breath).play();
-  setTimeout(()=>new Audio(ambient).play(), 800);
-  setTimeout(()=>new Audio(personal).play(), 1600);
-
-  // 🔴 시각화
-  draw(s1, 80);
-  setTimeout(()=>draw(s2,150),800);
-  setTimeout(()=>draw(s3,220),1600);
+  reactiveBlob(breath);
 };
 
 </script>
