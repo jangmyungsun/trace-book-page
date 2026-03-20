@@ -4,13 +4,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
-<body style="font-family:sans-serif; padding:40px;">
+<body style="font-family:sans-serif; padding:40px; line-height:1.8;">
 
 <p>주변의 소리를 들어보세요</p>
 
 <input type="file" accept="audio/*" capture id="rec">
 
+<p id="status" style="opacity:0.4; font-size:12px;"></p>
+
 <script>
+const status = document.getElementById("status");
+
+if(localStorage.getItem("ambient")){
+  status.innerText = "이미 남겨진 소리가 있습니다";
+}
+
 document.getElementById("rec").onchange = function(e){
 
   const file = e.target.files[0];
@@ -18,12 +26,16 @@ document.getElementById("rec").onchange = function(e){
 
   reader.onloadend = function(){
     localStorage.setItem("ambient", reader.result);
-    alert("소리가 기록되었습니다");
+    status.innerText = "소리가 기록되었습니다";
   };
 
   reader.readAsDataURL(file);
 };
 </script>
+
+<p style="margin-top:40px; opacity:0.5; font-size:12px;">
+다음 페이지로 이동하세요
+</p>
 
 </body>
 </html>
