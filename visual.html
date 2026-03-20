@@ -14,81 +14,47 @@
 
 <script>
 
-let audioCtx;
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// 🔴 핵심: blob 형태
-async function reactiveBlob(base64){
+// 🔴 base64 → seed 생성
+function getSeed(str){
+  let sum = 0;
+  for(let i=0;i<str.length;i++){
+    sum += str.charCodeAt(i);
+  }
+  return sum;
+}
 
-  const response = await fetch(base64);
-  const buffer = await response.arrayBuffer();
+// 🔴 blob 생성
+function drawBlob(seed){
 
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  await audioCtx.resume();
-
-  const audioBuffer = await audioCtx.decodeAudioData(buffer);
-
-  const source = audioCtx.createBufferSource();
-  source.buffer = audioBuffer;
-
-  const analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 128;
-
-  source.connect(analyser);
-  analyser.connect(audioCtx.destination);
-
-  source.start();
-
-  const data = new Uint8Array(analyser.frequencyBinCount);
+  let t = 0;
 
   function draw(){
 
-    analyser.getByteFrequencyData(data);
-
-    // 🔴 피치 계산 (고주파 비율)
-    let high = 0;
-    for(let i=64;i<data.length;i++){
-      high += data[i];
-    }
-    high /= 64;
-
-    // 🔴 에너지 계산
-    let sum = 0;
-    for(let i=0;i<data.length;i++){
-      sum += data[i];
-    }
-    const energy = sum / data.length;
-
-    // 🔴 잔상
-    ctx.fillStyle = "rgba(255,255,255,0.08)";
+    ctx.fillStyle = "rgba(255,255,255,0.1)";
     ctx.fillRect(0,0,300,300);
-
-    const centerX = 150;
-    const centerY = 150;
-
-    const baseRadius = energy * 0.6;
 
     ctx.beginPath();
 
     for(let i=0;i<Math.PI*2;i+=0.1){
 
-      // 🔴 피치 영향 → 형태 울퉁불퉁
-      const distortion = Math.sin(i*10 + high*0.1) * (high * 0.2);
+      // 🔴 seed 기반 변화
+      const r = 60 + Math.sin(i* (seed%10) + t) * (20 + seed%30);
 
-      const r = baseRadius + distortion;
-
-      const x = centerX + Math.cos(i) * r;
-      const y = centerY + Math.sin(i) * r;
+      const x = 150 + Math.cos(i) * r;
+      const y = 150 + Math.sin(i) * r;
 
       if(i===0) ctx.moveTo(x,y);
       else ctx.lineTo(x,y);
     }
 
     ctx.closePath();
-
     ctx.strokeStyle = "#111";
     ctx.stroke();
+
+    t += 0.05;
 
     requestAnimationFrame(draw);
   }
@@ -101,14 +67,19 @@ document.getElementById("play").onclick = function(){
 
   const breath = localStorage.getItem("breath");
 
-  if (!breath) {
-    alert("데이터 없음");
+  if(!breath){
+    alert("소리 없음");
     return;
   }
 
+  // 🔴 소리 재생 (이건 안정)
+  new Audio(breath).play();
+
   ctx.clearRect(0,0,300,300);
 
-  reactiveBlob(breath);
+  const seed = getSeed(breath);
+
+  drawBlob(seed);
 };
 
 </script>
