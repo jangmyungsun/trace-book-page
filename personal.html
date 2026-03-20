@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="font-family:sans-serif; padding:40px;">
+
+<p>주변의 소리를 들어보세요</p>
+
+<input type="file" accept="audio/*" capture id="rec">
+
+<script>
+document.getElementById("rec").onchange = e => {
+
+  const file = e.target.files[0];
+  const reader = new FileReader();
+
+  reader.onloadend = () => {
+    localStorage.setItem("ambient", reader.result);
+    alert("소리가 기록되었습니다");
+  };
+
+  reader.readAsDataURL(file);
+};
+</script>
+
+</body>
+</html>
