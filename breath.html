@@ -13,9 +13,13 @@
 <p id="status" style="opacity:0.4; font-size:12px;"></p>
 
 <script>
+// 세션 시작
+if (!sessionStorage.getItem("trace_session")) {
+  sessionStorage.setItem("trace_session", "active");
+}
+
 const status = document.getElementById("status");
 
-// 이미 기록된 경우
 if(localStorage.getItem("breath")){
   status.innerText = "이미 남겨진 숨이 있습니다";
 }
@@ -34,8 +38,8 @@ document.getElementById("rec").onchange = function(e){
 };
 </script>
 
-<p style="margin-top:40px; opacity:0.5; font-size:12px;">
-다음 페이지로 이동하세요
+<p style="margin-top:40px; opacity:0.3; font-size:11px;">
+같은 브라우저에서 이어주세요
 </p>
 
 </body>
