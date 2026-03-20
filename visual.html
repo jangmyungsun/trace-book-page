@@ -1,10 +1,81 @@
 <!DOCTYPE html>
 <html>
-<body>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
 
-<h1>보이면 성공</h1>
+<body style="font-family:sans-serif; padding:40px;">
 
-<button onclick="alert('된다')">클릭</button>
+<p id="play" style="cursor:pointer;">
+눌러보세요
+</p>
+
+<p id="guide" style="font-size:12px; opacity:0.5;"></p>
+
+<canvas id="canvas" width="300" height="300" style="border:1px solid #ccc;"></canvas>
+
+<script>
+
+// 🔴 무조건 실행 확인
+console.log("스크립트 시작");
+
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+document.getElementById("play").onclick = function(){
+
+  console.log("클릭됨");
+
+  ctx.clearRect(0,0,300,300);
+
+  // 🔴 기본 원 (확인용)
+  ctx.beginPath();
+  ctx.arc(150,150,50,0,Math.PI*2);
+  ctx.stroke();
+
+  // 🔴 localStorage 확인
+  const breath = localStorage.getItem("breath");
+
+  if(!breath){
+    document.getElementById("guide").innerText = "데이터 없음";
+    return;
+  }
+
+  // 🔴 소리 재생 (안정)
+  const audio = new Audio(breath);
+  audio.play().catch(e=>{
+    console.log("audio error", e);
+  });
+
+  // 🔴 간단한 움직임 (절대 안 죽음)
+  let t = 0;
+
+  function loop(){
+
+    ctx.clearRect(0,0,300,300);
+
+    ctx.beginPath();
+
+    for(let x=0;x<300;x+=5){
+
+      const y = 150 + Math.sin(x*0.05 + t)*30;
+
+      if(x===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
+    }
+
+    ctx.stroke();
+
+    t += 0.1;
+
+    requestAnimationFrame(loop);
+  }
+
+  loop();
+
+};
+
+</script>
 
 </body>
 </html>
