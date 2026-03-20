@@ -2,37 +2,192 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>visual</title>
 </head>
 
-<body style="font-family:sans-serif; padding:40px;">
+<body style="font-family:sans-serif; padding:40px; background:#fff; color:#111;">
 
 <p id="play" style="cursor:pointer;">
-눌러보세요
+쌓인 것을 바라보세요
 </p>
 
-<canvas id="canvas" width="300" height="300" style="border:1px solid #ccc;"></canvas>
+<p id="guide" style="opacity:0.4; font-size:12px;"></p>
+
+<canvas id="canvas" width="320" height="420" style="margin-top:20px; width:100%; max-width:320px; height:auto; display:block;"></canvas>
 
 <script>
-
-// 1. 캔버스 확인
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+const guide = document.getElementById("guide");
 
-// 2. 클릭 확인
-document.getElementById("play").onclick = function(){
+let running = false;
+let rafId = null;
 
-  console.log("클릭됨");
+// 문자열 -> seed
+function getSeed(str) {
+  let sum = 0;
+  for (let i = 0; i < str.length; i++) {
+    sum = (sum + str.charCodeAt(i) * (i + 1)) % 100000;
+  }
+  return sum;
+}
 
-  // 3. 화면 초기화
-  ctx.clearRect(0,0,300,300);
+// seed 기반 의사난수
+function seededNoise(seed, x, t, scale = 1) {
+  return Math.sin(x * 0.013 * scale + t * 0.9 + seed * 0.0017) * 0.5
+       + Math.cos(x * 0.021 * scale - t * 0.6 + seed * 0.0023) * 0.5;
+}
 
-  // 4. 무조건 그리기 테스트
+// 숨 레이어: 느리고 길게
+function drawBreath(seed, t) {
   ctx.beginPath();
-  ctx.arc(150,150,50,0,Math.PI*2);
+
+  for (let x = 0; x <= canvas.width; x += 4) {
+    const baseY = 110;
+    const y =
+      baseY
+      + Math.sin(x * 0.02 + t * 0.8 + seed * 0.001) * 18
+      + seededNoise(seed, x, t, 0.8) * 8;
+
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  ctx.strokeStyle = "rgba(0,0,0,0.78)";
+  ctx.lineWidth = 1.2;
   ctx.stroke();
+}
 
+// 환경 레이어: 더 촘촘하고 잔진동
+function drawAmbient(seed, t) {
+  ctx.beginPath();
+
+  for (let x = 0; x <= canvas.width; x += 3) {
+    const baseY = 210;
+    const y =
+      baseY
+      + Math.sin(x * 0.06 + t * 1.1 + seed * 0.002) * 8
+      + Math.cos(x * 0.12 - t * 1.6 + seed * 0.0015) * 10
+      + seededNoise(seed, x, t, 1.6) * 14;
+
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  ctx.strokeStyle = "rgba(0,0,0,0.5)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+// 개인 레이어: 불규칙하고 튀는 느낌
+function drawPersonal(seed, t) {
+  ctx.beginPath();
+
+  for (let x = 0; x <= canvas.width; x += 5) {
+    const baseY = 305;
+    const jagged =
+      Math.sin(x * 0.17 + t * 2.1 + seed * 0.003) * 10 +
+      Math.sign(Math.sin(x * 0.09 - t * 1.7 + seed * 0.002)) * 12;
+
+    const y =
+      baseY
+      + jagged
+      + seededNoise(seed, x, t, 2.2) * 12;
+
+    if (x === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+
+  ctx.strokeStyle = "rgba(0,0,0,0.28)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+// 잔상 배경
+function fadeCanvas() {
+  ctx.fillStyle = "rgba(255,255,255,0.08)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+}
+
+// 시작 가이드 선
+function drawGuideLines() {
+  ctx.beginPath();
+  ctx.moveTo(0, 110); ctx.lineTo(canvas.width, 110);
+  ctx.moveTo(0, 210); ctx.lineTo(canvas.width, 210);
+  ctx.moveTo(0, 305); ctx.lineTo(canvas.width, 305);
+  ctx.strokeStyle = "rgba(0,0,0,0.05)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+}
+
+function stopVisual() {
+  running = false;
+  if (rafId) cancelAnimationFrame(rafId);
+}
+
+function startVisual(breathSeed, ambientSeed, personalSeed) {
+  stopVisual();
+  running = true;
+  let t = 0;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawGuideLines();
+
+  function loop() {
+    if (!running) return;
+
+    fadeCanvas();
+    drawGuideLines();
+
+    drawBreath(breathSeed, t);
+    drawAmbient(ambientSeed, t * 1.05);
+    drawPersonal(personalSeed, t * 1.2);
+
+    t += 0.035;
+    rafId = requestAnimationFrame(loop);
+  }
+
+  loop();
+}
+
+document.getElementById("play").onclick = function () {
+  const breath = localStorage.getItem("breath");
+  const ambient = localStorage.getItem("ambient");
+  const personal = localStorage.getItem("personal");
+
+  if (!breath || !ambient || !personal) {
+    guide.innerText = "아직 모든 흔적이 모이지 않았습니다";
+    return;
+  }
+
+  guide.innerText = "레이어가 서로 다른 방식으로 움직입니다";
+
+  const breathSeed = getSeed(breath);
+  const ambientSeed = getSeed(ambient);
+  const personalSeed = getSeed(personal);
+
+  // 소리 재생
+  const a1 = new Audio(breath);
+  const a2 = new Audio(ambient);
+  const a3 = new Audio(personal);
+
+  a1.volume = 0.9;
+  a2.volume = 0.8;
+  a3.volume = 0.85;
+
+  a1.play().catch(() => {});
+  setTimeout(() => a2.play().catch(() => {}), 700);
+  setTimeout(() => a3.play().catch(() => {}), 1400);
+
+  // 비주얼 시작
+  startVisual(breathSeed, ambientSeed, personalSeed);
+
+  // 대충 12초 뒤 멈춤
+  setTimeout(() => {
+    stopVisual();
+    guide.innerText = "흔적이 잠시 남아 있습니다";
+  }, 12000);
 };
-
 </script>
 
 </body>
