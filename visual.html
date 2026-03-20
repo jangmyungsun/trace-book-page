@@ -7,45 +7,65 @@
 <body style="font-family:sans-serif; padding:40px;">
 
 <p id="play" style="cursor:pointer;">
-테스트 (이미지 생성)
+소리를 들어보세요 (움직임 테스트)
 </p>
 
-<canvas id="canvas" width="300" height="300" style="margin-top:40px; border:1px solid #eee;"></canvas>
+<canvas id="canvas" width="300" height="300" style="margin-top:40px;"></canvas>
 
 <script>
 
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-// 🔴 단순 waveform (AudioContext 안 씀)
-function drawSimpleWave(base64, offsetY){
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
-  const audio = new Audio(base64);
+// 🔴 소리 → 움직임
+async function playReactive(base64, offsetY){
 
-  // duration 기반으로 랜덤 생성 (fallback 방식)
-  audio.onloadedmetadata = function(){
+  const response = await fetch(base64);
+  const arrayBuffer = await response.arrayBuffer();
+  const buffer = await audioCtx.decodeAudioData(arrayBuffer);
 
-    const len = Math.floor(audio.duration * 50);
+  const source = audioCtx.createBufferSource();
+  source.buffer = buffer;
+
+  const analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 256;
+
+  source.connect(analyser);
+  analyser.connect(audioCtx.destination);
+
+  source.start();
+
+  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+  function draw(){
+
+    analyser.getByteTimeDomainData(dataArray);
 
     ctx.beginPath();
 
-    for(let i=0; i<len; i++){
+    for(let i=0; i<dataArray.length; i++){
 
-      const x = i * 3;
-      const y = offsetY + (Math.random() - 0.5) * 40;
+      const x = i * 2;
+      const y = offsetY + (dataArray[i] - 128) * 0.5;
 
-      if(i===0) ctx.moveTo(x, y);
-      else ctx.lineTo(x, y);
+      if(i===0) ctx.moveTo(x,y);
+      else ctx.lineTo(x,y);
     }
 
     ctx.strokeStyle = "#111";
     ctx.lineWidth = 1;
     ctx.stroke();
-  };
+
+    requestAnimationFrame(draw);
+  }
+
+  draw();
 }
 
-// 🔴 메인 실행
-document.getElementById("play").onclick = function(){
+// 🔴 실행
+document.getElementById("play").onclick = async function(){
 
   const breath = localStorage.getItem("breath");
   const ambient = localStorage.getItem("ambient");
@@ -59,16 +79,11 @@ document.getElementById("play").onclick = function(){
   // 초기화
   ctx.clearRect(0, 0, 300, 300);
 
-  // 소리 재생
-  [breath, ambient, personal].forEach((src, i)=>{
-    const audio = new Audio(src);
-    setTimeout(()=>audio.play(), i*800);
-  });
+  await audioCtx.resume(); // 🔴 중요
 
-  // 이미지 생성
-  drawSimpleWave(breath, 80);
-  drawSimpleWave(ambient, 150);
-  drawSimpleWave(personal, 220);
+  playReactive(breath, 80);
+  setTimeout(()=>playReactive(ambient, 150), 800);
+  setTimeout(()=>playReactive(personal, 220), 1600);
 };
 
 </script>
