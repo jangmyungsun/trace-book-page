@@ -10,7 +10,12 @@
 쌓인 것을 들어보세요
 </p>
 
-<p id="status" style="opacity:0.4; font-size:12px;"></p>
+<p id="guide" style="opacity:0.4; font-size:12px;"></p>
+
+<!-- 진행 바 -->
+<div style="margin-top:40px; width:100%; height:2px; background:#eee;">
+  <div id="bar" style="width:0%; height:2px; background:#111;"></div>
+</div>
 
 <script>
 
@@ -21,13 +26,17 @@ document.getElementById("play").onclick = function(){
   const personal = localStorage.getItem("personal");
 
   if (!breath || !ambient || !personal) {
-    document.getElementById("status").innerText = "아직 모든 흔적이 모이지 않았습니다";
+    document.getElementById("guide").innerText = "아직 모든 흔적이 모이지 않았습니다";
     return;
   }
 
-  document.getElementById("status").innerText = "재생 중...";
+  document.getElementById("guide").innerText = "화면을 녹화하면 이 기록을 가져갈 수 있습니다";
+
+  const bar = document.getElementById("bar");
 
   const sounds = [breath, ambient, personal];
+
+  let totalDuration = 0;
 
   sounds.forEach((src, i) => {
 
@@ -35,7 +44,12 @@ document.getElementById("play").onclick = function(){
 
     audio.volume = 0;
 
+    audio.onloadedmetadata = function(){
+      totalDuration += audio.duration;
+    };
+
     setTimeout(() => {
+
       audio.play();
 
       // 페이드 인
@@ -49,6 +63,17 @@ document.getElementById("play").onclick = function(){
     }, i * 1200);
 
   });
+
+  // 진행 바 (약 6초 기준)
+  let progress = 0;
+  const duration = 6000;
+
+  const interval = setInterval(() => {
+    progress += 100 / (duration / 100);
+    bar.style.width = progress + "%";
+
+    if (progress >= 100) clearInterval(interval);
+  }, 100);
 };
 
 </script>
