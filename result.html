@@ -1,23 +1,18 @@
 <!DOCTYPE html>
 <html>
-
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>trace result</title>
 </head>
 
-<body style="font-family:sans-serif; padding:40px; line-height:2;">
+<body style="font-family:sans-serif; padding:40px;">
 
-<p id="playBtn" style="cursor:pointer;">
+<p onclick="play()" style="cursor:pointer;">
 쌓인 것을 들어보세요
 </p>
 
-<p id="guide" style="opacity:0.5; font-size:12px;"></p>
-
 <script>
 
-// 🔴 재생 함수
-document.getElementById("playBtn").onclick = function(){
+function play(){
 
   const breath = localStorage.getItem("breath");
   const ambient = localStorage.getItem("ambient");
@@ -28,20 +23,16 @@ document.getElementById("playBtn").onclick = function(){
     return;
   }
 
-  document.getElementById("guide").innerText = "재생 중... 화면을 녹화하세요";
-
-  const list = [breath, ambient, personal];
-
-  list.forEach((src, i) => {
+  [breath, ambient, personal].forEach(function(src, i){
 
     const audio = new Audio(src);
 
-    setTimeout(()=>{
+    setTimeout(function(){
       audio.play();
     }, i * 800);
 
   });
-};
+}
 
 </script>
 
