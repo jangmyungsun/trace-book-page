@@ -21,8 +21,8 @@ const ctx = canvas.getContext("2d");
 
 let running = false;
 
-// 🔴 랜덤 기반 "소리 느낌" 움직임
-function animateLine(offsetY, intensity){
+// 🔴 볼륨 기반 움직임
+function animate(audio, offsetY){
 
   let t = 0;
 
@@ -32,11 +32,12 @@ function animateLine(offsetY, intensity){
 
     ctx.beginPath();
 
+    // 🔴 현재 볼륨 (핵심)
+    const intensity = (audio.volume || 0.5) * 30;
+
     for(let i=0; i<150; i++){
 
       const x = i * 2;
-
-      // 🔴 소리 느낌 (진동)
       const y = offsetY + Math.sin(i*0.1 + t) * intensity;
 
       if(i===0) ctx.moveTo(x,y);
@@ -55,7 +56,6 @@ function animateLine(offsetY, intensity){
   draw();
 }
 
-// 🔴 실행
 document.getElementById("play").onclick = function(){
 
   const breath = localStorage.getItem("breath");
@@ -67,25 +67,27 @@ document.getElementById("play").onclick = function(){
     return;
   }
 
-  document.getElementById("guide").innerText = "소리가 흔적으로 남습니다";
-
   ctx.clearRect(0, 0, 300, 300);
-
   running = true;
 
-  // 🔴 소리 재생 (이건 확실히 됨)
+  document.getElementById("guide").innerText = "소리에 따라 흔적이 달라집니다";
+
   const a1 = new Audio(breath);
   const a2 = new Audio(ambient);
   const a3 = new Audio(personal);
+
+  // 🔴 볼륨 약간 다르게 (차이 만들기)
+  a1.volume = 0.3;
+  a2.volume = 0.6;
+  a3.volume = 1.0;
 
   a1.play();
   setTimeout(()=>a2.play(), 800);
   setTimeout(()=>a3.play(), 1600);
 
-  // 🔴 움직임 (소리 느낌)
-  animateLine(80, 10);
-  setTimeout(()=>animateLine(150, 15), 800);
-  setTimeout(()=>animateLine(220, 20), 1600);
+  animate(a1, 80);
+  setTimeout(()=>animate(a2, 150), 800);
+  setTimeout(()=>animate(a3, 220), 1600);
 };
 
 </script>
