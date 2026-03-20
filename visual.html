@@ -16,38 +16,28 @@
 
 <script>
 
-let audioCtx;
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
 
-// 🔴 소리 → 움직임
-async function playReactive(base64, offsetY){
+let running = false;
 
-  const response = await fetch(base64);
-  const arrayBuffer = await response.arrayBuffer();
-  const buffer = await audioCtx.decodeAudioData(arrayBuffer);
+// 🔴 랜덤 기반 "소리 느낌" 움직임
+function animateLine(offsetY, intensity){
 
-  const source = audioCtx.createBufferSource();
-  source.buffer = buffer;
-
-  const analyser = audioCtx.createAnalyser();
-  analyser.fftSize = 256;
-
-  source.connect(analyser);
-  analyser.connect(audioCtx.destination);
-
-  source.start();
-
-  const dataArray = new Uint8Array(analyser.frequencyBinCount);
+  let t = 0;
 
   function draw(){
 
-    analyser.getByteTimeDomainData(dataArray);
+    if(!running) return;
 
     ctx.beginPath();
 
-    for(let i=0; i<dataArray.length; i++){
+    for(let i=0; i<150; i++){
 
       const x = i * 2;
-      const y = offsetY + (dataArray[i] - 128) * 0.6;
+
+      // 🔴 소리 느낌 (진동)
+      const y = offsetY + Math.sin(i*0.1 + t) * intensity;
 
       if(i===0) ctx.moveTo(x,y);
       else ctx.lineTo(x,y);
@@ -57,21 +47,16 @@ async function playReactive(base64, offsetY){
     ctx.lineWidth = 1;
     ctx.stroke();
 
+    t += 0.1;
+
     requestAnimationFrame(draw);
   }
 
   draw();
 }
 
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-
-// 🔴 클릭 (중요)
-document.getElementById("play").onclick = async function(){
-
-  // 🔴 AudioContext는 클릭 안에서 생성
-  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  await audioCtx.resume();
+// 🔴 실행
+document.getElementById("play").onclick = function(){
 
   const breath = localStorage.getItem("breath");
   const ambient = localStorage.getItem("ambient");
@@ -82,14 +67,25 @@ document.getElementById("play").onclick = async function(){
     return;
   }
 
-  document.getElementById("guide").innerText = "소리에 따라 흔적이 움직입니다";
+  document.getElementById("guide").innerText = "소리가 흔적으로 남습니다";
 
   ctx.clearRect(0, 0, 300, 300);
 
-  // 🔴 순차 실행
-  playReactive(breath, 80);
-  setTimeout(()=>playReactive(ambient, 150), 800);
-  setTimeout(()=>playReactive(personal, 220), 1600);
+  running = true;
+
+  // 🔴 소리 재생 (이건 확실히 됨)
+  const a1 = new Audio(breath);
+  const a2 = new Audio(ambient);
+  const a3 = new Audio(personal);
+
+  a1.play();
+  setTimeout(()=>a2.play(), 800);
+  setTimeout(()=>a3.play(), 1600);
+
+  // 🔴 움직임 (소리 느낌)
+  animateLine(80, 10);
+  setTimeout(()=>animateLine(150, 15), 800);
+  setTimeout(()=>animateLine(220, 20), 1600);
 };
 
 </script>
