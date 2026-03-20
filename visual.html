@@ -1,76 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body style="font-family:sans-serif; padding:40px;">
+
+<p id="play" style="cursor:pointer;">
+눌러보세요
+</p>
+
+<canvas id="canvas" width="300" height="300" style="border:1px solid #ccc;"></canvas>
+
 <script>
 
+// 1. 캔버스 확인
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-function getSeed(str){
-  let sum = 0;
-  for(let i=0;i<str.length;i++){
-    sum += str.charCodeAt(i);
-  }
-  return sum;
-}
-
-// 🔴 위치 + 색 + 패턴 분리
-function drawBlob(seed, cx, cy, color, speed, scale){
-
-  let t = 0;
-
-  function draw(){
-
-    ctx.beginPath();
-
-    for(let i=0;i<Math.PI*2;i+=0.1){
-
-      const r = 40 + Math.sin(i*(seed%8) + t) * (15 + seed%20) * scale;
-
-      const x = cx + Math.cos(i) * r;
-      const y = cy + Math.sin(i) * r;
-
-      if(i===0) ctx.moveTo(x,y);
-      else ctx.lineTo(x,y);
-    }
-
-    ctx.closePath();
-
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    t += speed;
-
-    requestAnimationFrame(draw);
-  }
-
-  draw();
-}
-
+// 2. 클릭 확인
 document.getElementById("play").onclick = function(){
 
-  const breath = localStorage.getItem("breath");
-  const ambient = localStorage.getItem("ambient");
-  const personal = localStorage.getItem("personal");
+  console.log("클릭됨");
 
-  if (!breath || !ambient || !personal){
-    alert("세 개 필요");
-    return;
-  }
-
+  // 3. 화면 초기화
   ctx.clearRect(0,0,300,300);
 
-  // 🔴 소리
-  new Audio(breath).play();
-  setTimeout(()=>new Audio(ambient).play(), 800);
-  setTimeout(()=>new Audio(personal).play(), 1600);
+  // 4. 무조건 그리기 테스트
+  ctx.beginPath();
+  ctx.arc(150,150,50,0,Math.PI*2);
+  ctx.stroke();
 
-  const s1 = getSeed(breath);
-  const s2 = getSeed(ambient);
-  const s3 = getSeed(personal);
-
-  // 🔴 핵심: 위치 다르게
-  drawBlob(s1, 120, 140, "rgba(0,0,0,0.8)", 0.05, 1.0); // 숨
-  drawBlob(s2, 170, 160, "rgba(0,0,0,0.5)", 0.03, 1.3); // 환경
-  drawBlob(s3, 150, 200, "rgba(0,0,0,0.3)", 0.08, 1.6); // 개인
 };
 
 </script>
+
+</body>
+</html>
